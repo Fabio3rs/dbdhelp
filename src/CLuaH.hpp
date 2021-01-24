@@ -439,6 +439,7 @@ public:
 	static void loadGlobalTable(lua_State* L, customParam& tableData);
 
 	typedef std::deque<customParam> multiCallBackParams_t;
+	typedef std::map<std::string, customParam> multiVariableParams_t;
 	typedef std::vector<CLuaH::luaScript> scriptStorage;
 
 	static CLuaH				&Lua();

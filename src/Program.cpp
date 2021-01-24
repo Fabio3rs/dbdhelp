@@ -168,6 +168,24 @@ int migmgr::Program::dumptbl(lua_State *L)
         auto &db = pr.dbs[dblid];
         auto &tb = db.tables[tblid];
 
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        CViewsManager &vmgr = CViewsManager::view();
+        CView &view = vmgr.get(vmgr.viewIdByPathAndName("views", "csharp"));
+
+        std::string output;
+        CLuaH::luaScript viewscript = view.instance(output, { {"dblid", CLuaH::customParam((int64_t)dblid)},
+                                {"tblid", CLuaH::customParam((int64_t)tblid)} });
+                                
+        CLuaH::Lua().runScript(viewscript);
+
+        FILE *outview = fopen((tb.name + "fromview.cs").c_str(), "w");
+        fwrite(output.c_str(), sizeof(output[0]), output.size(), outview);
+        fclose(outview);
+        outview = nullptr;
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         std::cout << "Database: " << db.name << std::endl;
         std::cout << "Table: " << tb.name << std::endl;
         std::cout << "\tNAME\t\tTYPE" << std::endl;
@@ -380,6 +398,8 @@ bool migmgr::Program::load()
         return true;
     
     loaded = CLuaH::Lua().loadFilesDequeStorage(migrations_directory, scripts);
+
+    CViewsManager::view();
 
     return loaded;
 }

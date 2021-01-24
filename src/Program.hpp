@@ -8,6 +8,7 @@
 #include "Database.hpp"
 #include "CLuaH.hpp"
 #include "CLuaFunctions.hpp"
+#include "CViewsManager.hpp"
 
 namespace migmgr
 {
