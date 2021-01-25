@@ -40,6 +40,7 @@ namespace migmgr
         friend class Database;
         friend class Program;
         std::string name;
+        std::string nicename;
         
         std::vector<Field> fields;
         std::vector<Migration> migrations;

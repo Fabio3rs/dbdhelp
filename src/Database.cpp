@@ -10,6 +10,7 @@ int migmgr::Database::create_table_if_not_exists(std::string name)
     }
 
     tables.push_back({name});
+    tables.back().nicename = name;
     return tables.size() - 1;
 }
 

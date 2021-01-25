@@ -29,6 +29,7 @@ namespace migmgr
         static int select_database(lua_State* L);
         static int create_table(lua_State* L);
         static int alter_table(lua_State* L);
+        static int set_table_nicename(lua_State *L);
         static int field_id(lua_State* L);
         static int field_timestamps(lua_State* L);
         static int create_field(lua_State *L);

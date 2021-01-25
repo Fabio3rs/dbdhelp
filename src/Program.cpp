@@ -75,6 +75,30 @@ int migmgr::Program::alter_table(lua_State *L)
 	return p.rtn();
 }
 
+int migmgr::Program::set_table_nicename(lua_State *L)
+{
+	CLuaFunctions::LuaParams p(L);
+
+	if (p.getNumParams() == 2 && lua_isstring(L, 1) && lua_isstring(L, 2))
+	{
+        int64_t dblid;
+        std::string tblname, tblnicename;
+		p  >> tblname >> tblnicename;
+
+	    lua_getglobal(L, "_databaseidx");
+	    dblid = lua_tointeger(L, -1);
+
+        Program &pr = prog();
+        int tblid = pr.dbs[dblid].create_table_if_not_exists(tblname);
+        pr.dbs[dblid].tables[tblid].nicename = tblnicename;
+        printf("teste");
+
+        p << tblid;
+	}
+
+	return p.rtn();
+}
+
 int migmgr::Program::field_id(lua_State *L)
 {
 	CLuaFunctions::LuaParams p(L);
@@ -215,6 +239,7 @@ int migmgr::Program::dumptbl(lua_State *L)
             
             lfielddata["name"] = field.name;
             lfielddata["type"] = varTypename;
+            lfielddata["pkey"] = (field.fg == primary_key);
 
             ++fieldposition;
         }
@@ -223,19 +248,20 @@ int migmgr::Program::dumptbl(lua_State *L)
                                 { "dblid", CLuaH::customParam((int64_t)dblid) },
                                 { "tblid", CLuaH::customParam((int64_t)tblid) },
                                 { "tblname", CLuaH::customParam(tb.name) },
+                                { "tblnicename", CLuaH::customParam(tb.nicename) },
                                 { "tabledata", ltable }
             });
                                 
         CLuaH::Lua().runScript(viewscript);
 
-        FILE *outview = fopen((tb.name + "fromview.cs").c_str(), "w");
+        FILE *outview = fopen((tb.nicename + ".cs").c_str(), "w");
         fwrite(output.c_str(), sizeof(output[0]), output.size(), outview);
         fclose(outview);
         outview = nullptr;
 
         ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        std::cout << "Database: " << db.name << std::endl;
+        /*std::cout << "Database: " << db.name << std::endl;
         std::cout << "Table: " << tb.name << std::endl;
         std::cout << "\tNAME\t\tTYPE" << std::endl;
         
@@ -251,7 +277,7 @@ int migmgr::Program::dumptbl(lua_State *L)
             switch(field.ft)
             {
             case integer:
-            /*  if (field.unsignedval) varTypename += "unsigned "*/
+            /-*  if (field.unsignedval) varTypename += "unsigned "*-/
                 varTypename += "int";
                 break;
 
@@ -415,7 +441,7 @@ int migmgr::Program::dumptbl(lua_State *L)
         }
 
         fclose(outpcs);
-        outpcs = 0;
+        outpcs = 0;*/
         //tbls.push_back({tblname, "CREATE"});
         //p << tbls.size() - 1;
 	}
@@ -428,6 +454,7 @@ int migmgr::Program::registerFunctions(lua_State* L)
 	lua_register(L, "select_database", select_database);
 	lua_register(L, "create_table", create_table);
 	lua_register(L, "alter_table", alter_table);
+	lua_register(L, "set_table_nicename", set_table_nicename);
 	lua_register(L, "field_id", field_id);
 	lua_register(L, "field_timestamps", field_timestamps);
 	lua_register(L, "create_field", create_field);
