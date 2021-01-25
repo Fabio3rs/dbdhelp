@@ -174,8 +174,57 @@ int migmgr::Program::dumptbl(lua_State *L)
         CView &view = vmgr.get(vmgr.viewIdByPathAndName("views", "csharp"));
 
         std::string output;
-        CLuaH::luaScript viewscript = view.instance(output, { {"dblid", CLuaH::customParam((int64_t)dblid)},
-                                {"tblid", CLuaH::customParam((int64_t)tblid)} });
+
+        CLuaH::customParam ltable;
+        ltable.setastable();
+        std::map<std::string, CLuaH::customParam> &ltbl = ltable.getTableData();
+
+        int fieldposition = 1;
+        for (auto &field : tb.fields)
+        {
+            CLuaH::customParam &lfield = ltbl[std::to_string(fieldposition)];
+            lfield.setastable();
+            std::map<std::string, CLuaH::customParam> &lfielddata = lfield.getTableData();
+
+            std::string varTypename;
+
+            switch(field.ft)
+            {
+            case integer:
+            /*  if (field.unsignedval) varTypename += "unsigned "*/
+                varTypename += "int";
+                break;
+
+            case string:
+                varTypename += "String";
+                break;
+
+            case decimal:
+                varTypename += "double";
+                break;
+
+            case date:
+            case datetime:
+                varTypename += "DateTime";
+                break;
+
+            case timestamp:
+                varTypename += "Int64";
+                break;
+            }
+            
+            lfielddata["name"] = field.name;
+            lfielddata["type"] = varTypename;
+
+            ++fieldposition;
+        }
+
+        CLuaH::luaScript viewscript = view.instance(output, {
+                                { "dblid", CLuaH::customParam((int64_t)dblid) },
+                                { "tblid", CLuaH::customParam((int64_t)tblid) },
+                                { "tblname", CLuaH::customParam(tb.name) },
+                                { "tabledata", ltable }
+            });
                                 
         CLuaH::Lua().runScript(viewscript);
 

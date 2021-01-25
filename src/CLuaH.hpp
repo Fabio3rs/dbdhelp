@@ -270,7 +270,22 @@ public:
 
 					for (auto& t : tableData)
 					{
-						lua_pushstring(L, t.first.c_str());
+						bool pushstr = true;
+						try
+						{
+							int arrval = std::stoi(t.first);
+							lua_pushinteger(L, arrval);
+							pushstr = false;
+						}
+						catch(const std::exception& e)
+						{
+							pushstr = true;
+						}
+						
+						if (pushstr)
+						{
+							lua_pushstring(L, t.first.c_str());
+						}
 						t.second.pushToLuaStack(L);
 						lua_settable(L, -3);
 					}
