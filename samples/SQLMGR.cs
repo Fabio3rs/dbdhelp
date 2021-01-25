@@ -108,8 +108,16 @@ namespace ConsoleApp1
             using (SqlConnection conn = connect())
             {
                 String sql = "CREATE TABLE dbo." + name + "\n\t(" + fieldsToSqlTbl(Fields) + "\t);\n";
-
                 SqlCommand cm = new SqlCommand(sql, conn);
+
+                Console.WriteLine(cm.ExecuteNonQuery().ToString());
+
+                sql = "ALTER TABLE dbo."
+                    + name + " ADD CONSTRAINT\n 	PK_"
+                    + name + " PRIMARY KEY CLUSTERED \n 	(\n 	id\n 	) WITH( STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY];";
+
+                // \n\nGO\nALTER TABLE dbo." + name + " SET (LOCK_ESCALATION = TABLE)\nGO\nCOMMIT
+                cm = new SqlCommand(sql, conn);
 
                 Console.WriteLine(cm.ExecuteNonQuery().ToString());
             }

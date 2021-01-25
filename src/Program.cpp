@@ -182,148 +182,17 @@ int migmgr::Program::dumptbl(lua_State *L)
 
 	if (p.getNumParams() == 1 && lua_isnumber(L, 1))
 	{
-        uint64_t dblid, tblid;
+ /*       uint64_t dblid, tblid;
 		p >> tblid;
 
 	    lua_getglobal(L, "_databaseidx");
 	    dblid = lua_tointeger(L, -1);
 
         Program &pr = prog();
-        auto &db = pr.dbs[dblid];
-        auto &tb = db.tables[tblid];
+        
 
-        {
-            /////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-            CViewsManager &vmgr = CViewsManager::view();
-            CView &view = vmgr.get(vmgr.viewIdByPathAndName("views", "csharp_model"));
-
-            std::string output;
-
-            CLuaH::customParam ltable;
-            ltable.setastable();
-            std::map<std::string, CLuaH::customParam> &ltbl = ltable.getTableData();
-
-            int fieldposition = 1;
-            for (auto &field : tb.fields)
-            {
-                CLuaH::customParam &lfield = ltbl[std::to_string(fieldposition)];
-                lfield.setastable();
-                std::map<std::string, CLuaH::customParam> &lfielddata = lfield.getTableData();
-
-                std::string varTypename;
-
-                switch(field.ft)
-                {
-                case integer:
-                /*  if (field.unsignedval) varTypename += "unsigned "*/
-                    varTypename += "int";
-                    break;
-
-                case string:
-                    varTypename += "String";
-                    break;
-
-                case decimal:
-                    varTypename += "double";
-                    break;
-
-                case date:
-                case datetime:
-                    varTypename += "DateTime";
-                    break;
-
-                case timestamp:
-                    varTypename += "Int64";
-                    break;
-                }
-                
-                lfielddata["name"] = field.name;
-                lfielddata["type"] = varTypename;
-                lfielddata["pkey"] = (field.fg == primary_key);
-
-                ++fieldposition;
-            }
-
-            CLuaH::luaScript viewscript = view.instance(output, {
-                                    { "dblid", CLuaH::customParam((int64_t)dblid) },
-                                    { "tblid", CLuaH::customParam((int64_t)tblid) },
-                                    { "tblname", CLuaH::customParam(tb.name) },
-                                    { "tblnicename", CLuaH::customParam(tb.nicename) },
-                                    { "tabledata", ltable }
-                });
-                                    
-            CLuaH::Lua().runScript(viewscript);
-
-            FILE *outview = fopen((tb.nicename + ".cs").c_str(), "w");
-            fwrite(output.c_str(), sizeof(output[0]), output.size(), outview);
-            fclose(outview);
-            outview = nullptr;
-
-            ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-        }
-
-        {
-            CViewsManager &vmgr = CViewsManager::view();
-            CView &migrate = vmgr.get(vmgr.viewIdByPathAndName("views", "csharp_migrate"));
-            FILE *outmigrate = fopen("Migrate.cs", "w");
-
-            std::string output;
-
-            CLuaH::customParam ltable;
-            ltable.setastable();
-            std::map<std::string, CLuaH::customParam> &ltbl = ltable.getTableData();
-
-            for (auto &db : pr.dbs)
-            {
-                for (auto &tbl : db.tables)
-                {
-                    for (auto &mig : tbl.migrations)
-                    {
-                        CLuaH::customParam &lmiginfo = ltbl[std::to_string(mig.identifier)];
-                        lmiginfo.setastable();
-                        std::map<std::string, CLuaH::customParam> &lmigdata = lmiginfo.getTableData();
-
-                        lmigdata["database"] = db.name;
-                        lmigdata["table"] = tbl.name;
-                        lmigdata["migration"] = mig.identifier;
-
-                        CLuaH::customParam &lfield = lmigdata["fields"];
-                        lfield.setastable();
-                        std::map<std::string, CLuaH::customParam> &lfieldt = lfield.getTableData();
-
-                        int fieldposition = 1;
-                        for (auto &field : mig.fields)
-                        {
-                            CLuaH::customParam &lfield = lfieldt[std::to_string(fieldposition)];
-                            lfield.setastable();
-                            std::map<std::string, CLuaH::customParam> &lfielddata = lfield.getTableData();
-
-                            lfielddata["name"] = field.name;
-                            lfielddata["type"] = field.ft;
-                            lfielddata["pkey"] = (field.fg == primary_key);
-
-                            ++fieldposition;
-                        }
-                    }
-                }
-            }
-
-            CLuaH::luaScript viewscript = migrate.instance(output, {
-                                    { "dblid", CLuaH::customParam((int64_t)dblid) },
-                                    { "tblid", CLuaH::customParam((int64_t)tblid) },
-                                    { "tblname", CLuaH::customParam(tb.name) },
-                                    { "tblnicename", CLuaH::customParam(tb.nicename) },
-                                    { "migratedata", ltable }
-                });
-                                    
-            CLuaH::Lua().runScript(viewscript);
-
-            fwrite(output.c_str(), sizeof(output[0]), output.size(), outmigrate);
-            fclose(outmigrate);
-            outmigrate = nullptr;
-        }
-
+        
+*/
         /*std::cout << "Database: " << db.name << std::endl;
         std::cout << "Table: " << tb.name << std::endl;
         std::cout << "\tNAME\t\tTYPE" << std::endl;
@@ -549,6 +418,166 @@ void migmgr::Program::run()
         return;
     
     CLuaH::Lua().runScriptsFromStorage(scripts);
+
+    output_migrations();
+    output_models();
+}
+
+void migmgr::Program::output_models()
+{
+    if (!loaded)
+        return;
+
+    std::string output_directory = "./output";
+
+    int dblid = 0;
+    for (auto &db : dbs)
+    {
+        int tblid = 0;
+        for (auto &tb : db.tables)
+        {
+            std::string output;
+
+            CLuaH::customParam ltable;
+            ltable.setastable();
+            std::map<std::string, CLuaH::customParam> &ltbl = ltable.getTableData();
+
+            int fieldposition = 1;
+            for (auto &field : tb.fields)
+            {
+                CLuaH::customParam &lfield = ltbl[std::to_string(fieldposition)];
+                lfield.setastable();
+                std::map<std::string, CLuaH::customParam> &lfielddata = lfield.getTableData();
+
+                std::string varTypename;
+
+                switch(field.ft)
+                {
+                case integer:
+                /*  if (field.unsignedval) varTypename += "unsigned "*/
+                    varTypename += "int";
+                    break;
+
+                case string:
+                    varTypename += "String";
+                    break;
+
+                case decimal:
+                    varTypename += "double";
+                    break;
+
+                case date:
+                case datetime:
+                    varTypename += "DateTime";
+                    break;
+
+                case timestamp:
+                    varTypename += "Int64";
+                    break;
+                }
+                
+                lfielddata["name"] = field.name;
+                lfielddata["type"] = varTypename;
+                lfielddata["pkey"] = (field.fg == primary_key);
+
+                ++fieldposition;
+            }
+
+            CViewsManager &vmgr = CViewsManager::view();
+            CView &view = vmgr.get(vmgr.viewIdByPathAndName("views", "csharp_model"));
+
+            CLuaH::luaScript viewscript = view.instance(output, {
+                                    { "dblid", CLuaH::customParam((int64_t)dblid) },
+                                    { "tblid", CLuaH::customParam((int64_t)tblid) },
+                                    { "tblname", CLuaH::customParam(tb.name) },
+                                    { "tblnicename", CLuaH::customParam(tb.nicename) },
+                                    { "tabledata", ltable }
+                });
+                                    
+            CLuaH::Lua().runScript(viewscript);
+
+            FILE *outview = fopen((output_directory + "/" + tb.nicename + ".cs").c_str(), "w");
+            fwrite(output.c_str(), sizeof(output[0]), output.size(), outview);
+            fclose(outview);
+            outview = nullptr;
+
+            ++tblid;
+        }
+
+        ++dblid;
+    }
+}
+
+void migmgr::Program::output_migrations()
+{
+    if (!loaded)
+        return;
+
+    std::string output_directory = "./output";
+
+    {
+            FILE *outmigrate = fopen((output_directory + "/" + "Migrate.cs").c_str(), "w");
+
+            std::string output;
+
+            CLuaH::customParam ltable;
+            ltable.setastable();
+            std::map<std::string, CLuaH::customParam> &ltbl = ltable.getTableData();
+
+            for (auto &db : dbs)
+            {
+                for (auto &tbl : db.tables)
+                {
+                    for (auto &mig : tbl.migrations)
+                    {
+                        CLuaH::customParam &lmiginfo = ltbl[std::to_string(mig.identifier)];
+                        lmiginfo.setastable();
+                        std::map<std::string, CLuaH::customParam> &lmigdata = lmiginfo.getTableData();
+
+                        lmigdata["database"] = db.name;
+                        lmigdata["table"] = tbl.name;
+                        lmigdata["migration"] = mig.identifier;
+                        lmigdata["migrationtype"] = (int64_t)mig.migtype;
+
+                        CLuaH::customParam &lfield = lmigdata["fields"];
+                        lfield.setastable();
+                        std::map<std::string, CLuaH::customParam> &lfieldt = lfield.getTableData();
+
+                        int fieldposition = 1;
+                        for (auto &field : mig.fields)
+                        {
+                            CLuaH::customParam &lfield = lfieldt[std::to_string(fieldposition)];
+                            lfield.setastable();
+                            std::map<std::string, CLuaH::customParam> &lfielddata = lfield.getTableData();
+
+                            lfielddata["name"] = field.name;
+                            lfielddata["type"] = field.ft;
+                            lfielddata["pkey"] = (field.fg == primary_key);
+                            lfielddata["index"] = (field.fg == primary_key);
+                            lfielddata["unsigned"] = (field.fg == primary_key);
+                            lfielddata["autoincrement"] = (field.fg == primary_key);
+                            lfielddata["length"] = (field.ft == string? 255 : 0);
+                            lfielddata["nullable"] = (field.fg != primary_key);
+
+                            ++fieldposition;
+                        }
+                    }
+                }
+            }
+
+            CViewsManager &vmgr = CViewsManager::view();
+            CView &migrate = vmgr.get(vmgr.viewIdByPathAndName("views", "csharp_migrate"));
+            
+            CLuaH::luaScript viewscript = migrate.instance(output, {
+                                    { "migratedata", ltable }
+                });
+                                    
+            CLuaH::Lua().runScript(viewscript);
+
+            fwrite(output.c_str(), sizeof(output[0]), output.size(), outmigrate);
+            fclose(outmigrate);
+            outmigrate = nullptr;
+        }
 }
 
 migmgr::Program &migmgr::Program::prog()

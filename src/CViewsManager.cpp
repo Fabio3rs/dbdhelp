@@ -242,11 +242,19 @@ int CView::vp(lua_State * L)
 			targetStr += str;
 		else
 		{
-			targetStr += "str failed ";
-			const char* s = lua_tostring(L, -1);
-			if (s == NULL) s = "Unrecognized Lua error";
+			if (lua_isboolean(L, 1))
+			{
+				int bl = lua_toboolean(L, 1);
+				targetStr += bl? "true" : "false";
+			}
+			else
+			{
+				targetStr += "str failed ";
+				const char* s = lua_tostring(L, -1);
+				if (s == NULL) s = "Unrecognized Lua error";
 
-			targetStr += s;
+				targetStr += s;
+			}
 		}
 	}
 

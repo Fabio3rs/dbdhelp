@@ -39,6 +39,9 @@ namespace migmgr
         bool load();
         void run();
 
+        void output_models();
+        void output_migrations();
+
         static Program &prog();
 
     private:
