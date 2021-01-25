@@ -27,7 +27,7 @@ namespace ConsoleApp1
         {
             int paramnum = 0;
 
-            String strsqlupdate = "UPDATE users SET ";
+            String strsqlupdate = "UPDATE {{! tblname !}} SET ";
     <?lua
     for k,p in ipairs(tabledata) do
         if p["pkey"] == false then
